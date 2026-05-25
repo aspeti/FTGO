@@ -1,0 +1,29 @@
+C4Context
+  title FTGO – Diagrama de Contexto (Nivel 1)
+
+  Person(consumer, "Consumidor", "Usuario final móvil/web que ordena comida a domicilio")
+  Person(restaurant, "Restaurante", "Operador de cocina: gestiona tickets y menús")
+  Person(courier, "Courier", "Repartidor independiente que entrega pedidos")
+  Person(backoffice, "Empleado FTGO", "Back office: soporte, finanzas, operaciones")
+
+  System(ftgo, "FTGO Platform", "Plataforma de delivery: conecta consumidores, restaurantes y couriers")
+
+  System_Ext(stripe, "Stripe", "Pasarela de pago: cobros al consumidor y payouts a restaurantes/couriers")
+  System_Ext(googlemaps, "Google Maps", "Geocoding y cálculo de rutas optimizadas para couriers")
+  System_Ext(sendgrid, "SendGrid", "Envío de emails transaccionales: confirmaciones, recibos, alertas")
+  System_Ext(twilio, "Twilio", "SMS y push notifications de estado del pedido")
+  System_Ext(legacy, "Monolito Legacy FTGO", "Aplicación Java (WAR) existente — coexiste durante Strangler Fig 18-24 meses")
+
+  Rel(consumer, ftgo, "Ordena comida, consulta estado, hace tracking", "HTTPS / App móvil y Web")
+  Rel(restaurant, ftgo, "Acepta/rechaza tickets, actualiza menú y disponibilidad", "HTTPS / Dashboard Web")
+  Rel(courier, ftgo, "Acepta asignaciones, actualiza GPS, gestiona entregas", "HTTPS / App móvil")
+  Rel(backoffice, ftgo, "Gestiona incidentes, consulta reportes, administra operaciones", "HTTPS / Web Admin")
+
+  Rel(ftgo, stripe, "Cobra al consumidor, procesa reembolsos, gestiona payouts", "JSON/HTTPS REST")
+  Rel(ftgo, googlemaps, "Geocodifica direcciones y calcula rutas optimizadas", "JSON/HTTPS REST")
+  Rel(ftgo, sendgrid, "Envía emails transaccionales", "JSON/HTTPS REST")
+  Rel(ftgo, twilio, "Envía SMS y push notifications", "JSON/HTTPS REST")
+  Rel(ftgo, legacy, "Delega funcionalidades no migradas aún (Strangler Fig)", "JSON/HTTPS REST")
+  Rel(legacy, ftgo, "Publica eventos de dominio durante la coexistencia", "Kafka protocol")
+
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")

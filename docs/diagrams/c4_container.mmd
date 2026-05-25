@@ -1,0 +1,90 @@
+C4Container
+  title FTGO – Diagrama de Contenedores (Nivel 2)
+
+  Person(consumer, "Consumidor", "Usuario final móvil/web")
+  Person(restaurant, "Restaurante", "Operador de cocina")
+  Person(courier, "Courier", "Repartidor independiente")
+  Person(backoffice, "Empleado FTGO", "Back office")
+
+  System_Ext(stripe, "Stripe", "Pasarela de pago")
+  System_Ext(googlemaps, "Google Maps", "Geocoding y rutas")
+  System_Ext(sendgrid, "SendGrid", "Emails transaccionales")
+  System_Ext(twilio, "Twilio", "SMS y push notifications")
+  System_Ext(legacy, "Monolito Legacy FTGO", "Monolito Java (WAR) — Strangler Fig")
+
+  System_Boundary(ftgo, "FTGO Platform") {
+
+    Container(mobile_app, "Mobile App", "React Native", "App del consumidor: menús, pedidos, tracking")
+    Container(web_restaurant, "Restaurant Dashboard", "React / Web", "Gestión de tickets, menús, disponibilidad")
+    Container(web_courier, "Courier App", "React Native", "Asignaciones, rutas, actualización GPS")
+    Container(web_admin, "Admin Web", "React / Web", "Reportes, incidentes, operaciones back office")
+
+    Container(api_gateway, "API Gateway", "Spring Cloud Gateway", "Punto de entrada: routing, autenticación JWT, rate limiting")
+
+    Container(consumer_svc, "Consumer Service", "Java 17 / Spring Boot", "CAP-01: perfiles, autenticación, direcciones")
+    Container(restaurant_svc, "Restaurant Service", "Java 17 / Spring Boot", "CAP-02: menús, horarios, disponibilidad")
+    Container(order_svc, "Order Service", "Java 17 / Spring Boot", "CAP-03: toma de pedidos, aggregate Order, orquesta Saga")
+    Container(kitchen_svc, "Kitchen Service", "Java 17 / Spring Boot", "CAP-04: tickets de cocina, estado de preparación")
+    Container(delivery_svc, "Delivery Service", "Java 17 / Spring Boot", "CAP-05: asignación de couriers, tracking GPS")
+    Container(billing_svc, "Billing Service", "Java 17 / Spring Boot", "CAP-06: cobros, comisiones, payouts via Stripe")
+    Container(notification_svc, "Notification Service", "Java 17 / Spring Boot", "CAP-07: emails, SMS y push via SendGrid/Twilio")
+
+    ContainerDb(consumer_db, "Consumer DB", "PostgreSQL 15", "Perfiles, direcciones, preferencias")
+    ContainerDb(restaurant_db, "Restaurant DB", "PostgreSQL 15", "Restaurantes, menús, horarios")
+    ContainerDb(order_db, "Order DB", "PostgreSQL 15", "Pedidos, ítems, aggregate Order")
+    ContainerDb(kitchen_db, "Kitchen DB", "PostgreSQL 15", "Tickets de cocina y estado")
+    ContainerDb(delivery_db, "Delivery DB", "PostgreSQL 15 + Redis", "Asignaciones y caché de ubicaciones GPS")
+    ContainerDb(billing_db, "Billing DB", "PostgreSQL 15", "Registros contables, cobros, payouts")
+
+    ContainerQueue(kafka, "Event Broker", "Apache Kafka", "Bus de eventos: OrderCreated, PaymentSucceeded, KitchenTicketReady, DeliveryAssigned")
+  }
+
+  %% Personas → Frontends
+  Rel(consumer, mobile_app, "Usa", "iOS / Android")
+  Rel(restaurant, web_restaurant, "Usa", "HTTPS / Browser")
+  Rel(courier, web_courier, "Usa", "iOS / Android")
+  Rel(backoffice, web_admin, "Usa", "HTTPS / Browser")
+
+  %% Frontends → API Gateway
+  Rel(mobile_app, api_gateway, "Peticiones del consumidor", "JSON/HTTPS REST")
+  Rel(web_restaurant, api_gateway, "Peticiones del restaurante", "JSON/HTTPS REST")
+  Rel(web_courier, api_gateway, "Peticiones y actualizaciones GPS", "JSON/HTTPS REST + WebSocket")
+  Rel(web_admin, api_gateway, "Peticiones de back office", "JSON/HTTPS REST")
+
+  %% API Gateway → Servicios (síncrono — solo entrada del consumidor)
+  Rel(api_gateway, consumer_svc, "Autenticación y perfiles", "JSON/HTTPS REST")
+  Rel(api_gateway, restaurant_svc, "Consulta menús y disponibilidad", "JSON/HTTPS REST")
+  Rel(api_gateway, order_svc, "Crea y consulta pedidos", "JSON/HTTPS REST")
+  Rel(api_gateway, delivery_svc, "Tracking en tiempo real", "WebSocket / SSE")
+
+  %% Servicios → BDs (DB-per-service — ADR 0001)
+  Rel(consumer_svc, consumer_db, "Lee/Escribe perfiles", "JDBC")
+  Rel(restaurant_svc, restaurant_db, "Lee/Escribe menús", "JDBC")
+  Rel(order_svc, order_db, "Lee/Escribe pedidos (aggregate)", "JDBC")
+  Rel(kitchen_svc, kitchen_db, "Lee/Escribe tickets", "JDBC")
+  Rel(delivery_svc, delivery_db, "Lee/Escribe asignaciones y caché GPS", "JDBC + Redis")
+  Rel(billing_svc, billing_db, "Lee/Escribe registros contables", "JDBC")
+
+  %% Servicios → Kafka (publicación — Transactional Outbox, ADR 0002)
+  Rel(order_svc, kafka, "Publica OrderCreated, OrderCancelled", "Kafka protocol / Transactional Outbox")
+  Rel(billing_svc, kafka, "Publica PaymentSucceeded, PaymentFailed", "Kafka protocol / Transactional Outbox")
+  Rel(kitchen_svc, kafka, "Publica KitchenTicketAccepted, KitchenTicketReady", "Kafka protocol / Transactional Outbox")
+  Rel(delivery_svc, kafka, "Publica DeliveryAssigned, OrderDelivered", "Kafka protocol / Transactional Outbox")
+
+  %% Kafka → Servicios (consumo — Orchestration Saga, ADR 0002 Richardson Cap 4)
+  Rel(kafka, billing_svc, "Consume OrderCreated → inicia cobro", "Kafka protocol")
+  Rel(kafka, kitchen_svc, "Consume PaymentSucceeded → crea ticket", "Kafka protocol")
+  Rel(kafka, delivery_svc, "Consume KitchenTicketReady → asigna courier", "Kafka protocol")
+  Rel(kafka, notification_svc, "Consume eventos de estado → notifica actores", "Kafka protocol")
+
+  %% Servicios → Sistemas externos
+  Rel(billing_svc, stripe, "Cobra y gestiona reembolsos", "JSON/HTTPS REST")
+  Rel(delivery_svc, googlemaps, "Calcula rutas optimizadas", "JSON/HTTPS REST")
+  Rel(notification_svc, sendgrid, "Envía emails transaccionales", "JSON/HTTPS REST")
+  Rel(notification_svc, twilio, "Envía SMS y push notifications", "JSON/HTTPS REST")
+
+  %% Monolito Legacy — coexistencia Strangler Fig (ADR 0001 R-05)
+  Rel(api_gateway, legacy, "Redirige rutas no migradas aún", "JSON/HTTPS REST")
+  Rel(legacy, kafka, "Publica eventos de dominio durante coexistencia", "Kafka protocol")
+
+  UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
