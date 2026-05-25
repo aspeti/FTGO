@@ -23,11 +23,11 @@
 └── prompts_mejorados/
     ├── prd_mejorado.md           ← Artefacto 7a: Prompt PRD mejorado (v0.2)
     ├── fsd_mejorado.md           ← Artefacto 7b: Prompt FSD mejorado (v0.2)
-    └── c4_mejorado.md            ← Artefacto 7c: Prompt C4 mejorado (v0.2)
+    ├── c4_mejorado.md            ← Artefacto 7c: Prompt C4 mejorado (v0.2)
+    └── adr_mejorado.md           ← Artefacto 7d: Prompt ADR mejorado (v0.2)
 ```
 
-> Artefacto pendiente antes de la entrega:
-> `prompts_mejorados/adr_mejorado.md`
+> Todos los artefactos del examen están completos. Verificar manualmente el branch antes de entregar.
 
 ---
 
@@ -44,7 +44,7 @@
 | `prompts_mejorados/prd_mejorado.md` | Semilla B.1 examen Módulo 4 | Semilla B.1 \| Brief §A.1–A.5 \| Richardson Cap 1–2 |
 | `prompts_mejorados/fsd_mejorado.md` | Semilla B.2 examen Módulo 4 | Semilla B.2 \| docs/PRD.md \| Brief §A.5 \| Richardson Cap 3–4 |
 | `prompts_mejorados/c4_mejorado.md` | Semilla B.4 examen Módulo 4 | Semilla B.4 \| ADR-0001 \| ADR-0002 \| Richardson Cap 1–4 |
-| `prompts_mejorados/adr_mejorado.md` | — | _archivo pendiente_ |
+| `prompts_mejorados/adr_mejorado.md` | Semilla B.3 examen Módulo 4 | Semilla B.3 \| PRD NFR-01..06 \| Brief §A.4 R-01..R-08 \| Richardson Cap 1–4 |
 
 ---
 
@@ -88,6 +88,19 @@ Genera los diagramas C4 Nivel 1 y Nivel 2 de FTGO siguiendo las instrucciones de
 
 **Qué produce:** `docs/diagrams/c4_context.mmd` + `docs/diagrams/c4_container.mmd` — sintaxis Mermaid válida, 4 Person, 5 System_Ext, 7 microservicios, Kafka, protocolos en todas las Rel.  
 **Tiempo estimado:** 2–3 min con Claude Sonnet.
+
+### Comando — Generar ADR mejorado
+
+**Prerrequisitos:** `docs/PRD.md` y `docs/FSD.md` deben existir. Reemplazar `{DECISION}` antes de ejecutar.
+
+```
+@prompts_mejorados/adr_mejorado.md
+
+Genera el ADR para la decisión {DECISION} de FTGO siguiendo las instrucciones del prompt.
+```
+
+**Qué produce:** `docs/adr/000X-{DECISION}.md` — 6 secciones, 3 opciones con tabla de 5 dimensiones, cita Richardson, ≥ 2 consecuencias negativas reales.  
+**Tiempo estimado:** 3–5 min con Claude Sonnet.
 
 ### Renderizar diagramas C4 (disponible cuando existan los `.mmd`)
 
@@ -143,6 +156,20 @@ npx @mermaid-js/mermaid-cli -i docs/diagrams/c4_container.mmd -o docs/diagrams/c
 
 **Mejora:** de 38 % a 99 % (+61 pp).
 
+### adr_mejorado.md — ADRs
+**Indicador:** % de criterios del checklist de Verification cumplidos por ADR
+
+| Corrida | Versión | Score |
+|---------|---------|-------|
+| 1 | v0.1-seed | 33 % |
+| 2 | v0.1-seed | 44 % |
+| 3 | v0.1-seed | 39 % |
+| 4 | v0.2-mejorado | 89 % |
+| 5 | v0.2-mejorado | 94 % |
+| 6 | v0.2-mejorado | 94 % |
+
+**Mejora:** de 39 % a 92 % (+53 pp).
+
 ---
 
 ## Self-check de entrega
@@ -157,7 +184,7 @@ npx @mermaid-js/mermaid-cli -i docs/diagrams/c4_container.mmd -o docs/diagrams/c
 [x] prompts_mejorados/prd_mejorado.md  — 4 TODOs rellenados, Anti-patterns, Changelog, Métrica 6 corridas
 [x] prompts_mejorados/fsd_mejorado.md  — 4 TODOs rellenados, Anti-patterns, Changelog, Métrica 6 corridas
 [x] prompts_mejorados/c4_mejorado.md   — 4 TODOs rellenados, Anti-patterns, Changelog, Métrica 6 corridas
-[ ] prompts_mejorados/adr_mejorado.md  — ≥2 TODOs rellenados, 1 sección nueva, Changelog, Métrica 3 corridas
+[x] prompts_mejorados/adr_mejorado.md  — 4 TODOs rellenados, Anti-patterns, Changelog, Métrica 6 corridas
 [x] README.md                          — estructura del repo, trazabilidad, self-check
 [ ] Branch: release/exam-lab           ← confirmar manualmente antes de entregar
 ```
